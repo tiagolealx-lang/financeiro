@@ -213,7 +213,8 @@ with aba6:
         
         with col_g1:
             st.markdown("**Distribuição Percentual de Gastos**")
-            fig1 = px.pie(df_pizza, values='Valor', names='Categoria', hole=0.5, color_discrete_sequence=px.colors.Pastel)
+            # Correção da paleta de cores aplicada abaixo
+            fig1 = px.pie(df_pizza, values='Valor', names='Categoria', hole=0.5, color_discrete_sequence=px.colors.qualitative.Pastel)
             fig1.update_layout(height=300, paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white"))
             st.plotly_chart(fig1, use_container_width=True)
             

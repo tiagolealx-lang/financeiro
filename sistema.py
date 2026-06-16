@@ -69,7 +69,6 @@ st.write("---")
 df_atual = st.session_state.dados
 
 if df_atual.empty:
-    # SISTEMA ZERADO: Valores padrão começam em zero
     v_gastos = 0.00
     v_recebidos = 0.00
     v_pago = 0.00
@@ -89,7 +88,7 @@ else:
         
     v_saldo = v_recebidos - v_pago
 
-# Renderização do Bloco de Métricas Coloridas Superior com os valores reais
+# Renderização do Bloco de Métricas Coloridas Superior
 st.markdown(f"""
     <div class="barra-metricas">
         <div class="card-f c-gastos"><div class="t-lbl">Total de Gastos</div><div class="v-num">R$ {v_gastos:,.2f}</div></div>
@@ -120,7 +119,8 @@ with aba1:
         with col_tipo:
             tipo = st.selectbox("Tipo", ["Despesa (Saída)", "Receita (Entrada)"])
         with col_grupo:
-            grupo = st.selectbox("Classificação/Grupo", ["Gastos Fixos", "Parcelamentos", "Gastos do Mês", "Recebimentos"])
+            # ADICIONADO "Salário" NA LISTA DE SELEÇÃO DE GRUPO ABAIXO
+            grupo = st.selectbox("Classificação/Grupo", ["Gastos Fixos", "Parcelamentos", "Gastos do Mês", "Recebimentos", "Salário"])
             
         col_cat, col_val, col_status = st.columns(3)
         with col_cat:
@@ -181,7 +181,8 @@ with aba4:
 # --- ABA 5: RECEBIMENTOS ---
 with aba5:
     st.subheader("💰 Entradas e Recebimentos")
-    df_rec_aba = df_atual[df_atual["Tipo"] == "Receita (Entrada)"] if not df_atual.empty else pd.DataFrame()
+    # AJUSTADO: Mostra tanto quem foi classificado como "Recebimentos" quanto como "Salário"
+    df_rec_aba = df_atual[(df_atual["Tipo"] == "Receita (Entrada)") | (df_atual["Grupo"] == "Salário")] if not df_atual.empty else pd.DataFrame()
     if not df_rec_aba.empty:
         st.dataframe(df_rec_aba[["Data", "Categoria", "Descrição", "Valor", "Status"]], use_container_width=True)
     else:
@@ -192,7 +193,6 @@ with aba6:
     st.subheader("📊 Análise Detalhada por Categoria")
     
     if df_atual.empty:
-        # Se estiver zerado, exibe gráficos limpos ao invés de dados falsos
         df_pizza = pd.DataFrame()
         df_mensal_barra = pd.DataFrame()
     else:

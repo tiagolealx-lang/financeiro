@@ -224,12 +224,11 @@ with aba5:
     else:
         st.info(f"Nenhum Recebimento cadastrado em {mes_selecionado_nome}/{ano_selecionado}.")
 
-# --- ABA 6: GASTOS POR CATEGORIA (GRÁFICOS PROTEGIDOS) ---
+# --- ABA 6: GASTOS POR CATEGORIA (REFEITA SEM ERROS) ---
 with aba6:
     st.subheader(f"📊 Análise de {mes_selecionado_nome} por Categoria")
     
-    df_despesas_reais = pd.DataFrame()
+    # Busca saídas válidas de forma direta
+    df_gastos_grafico = pd.DataFrame()
     if not df_atual.empty:
-        df_despesas_reais = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Grupo"] != "Desafios")]
-
-    if not df_despesas_reais.empty:
+        df_gastos_grafico = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Grupo"] != "Desafios")]

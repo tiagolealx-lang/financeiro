@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-from datetime import datetime, date
+from datetime import datetime
 
 # Importação segura dos gráficos do Plotly
 try:
@@ -69,18 +69,15 @@ st.write("---")
 df_atual = st.session_state.dados
 
 if df_atual.empty:
-    # Valores de Exemplo baseados no seu modelo caso esteja vazio
     v_gastos = 2483.64
     v_recebidos = 3500.00
     v_pago = 615.47
     v_falta = 1868.17
     v_saldo = 2884.53
 else:
-    # Cálculos Reais Dinâmicos
     v_recebidos = df_atual[df_atual["Tipo"] == "Receita (Entrada)"]["Valor"].sum()
     v_gastos = df_atual[df_atual["Tipo"] == "Despesa (Saída)"]["Valor"].sum()
     
-    # Tratamento de status de pagamento se houver a coluna
     if "Status" in df_atual.columns:
         v_pago = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Status"] == "PAGO")]["Valor"].sum()
         v_falta = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Status"] == "A PAGAR")]["Valor"].sum()
@@ -101,7 +98,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# --- CRIAÇÃO DAS ABAS HORIZONTAIS (UMA DO LADO DA OUTRA) ---
+# --- CRIAÇÃO DAS ABAS HORIZONTAIS ---
 aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs([
     "📥 NOVO LANÇAMENTO",
     "📌 GASTOS FIXOS", 
@@ -117,7 +114,9 @@ with aba1:
     with st.form("formulario_lancamento", clear_on_submit=True):
         col_data, col_tipo, col_grupo = st.columns(3)
         with col_data:
-            data = st.date_input("Data de Vencimento", datetime.today().date(), min_value=date(2026, 1, 1), max_value=date(2050, 12, 31))
+            # CALENDÁRIO TOTALMENTE DESTRAVADO E LIVRE AQUI:
+            data = st.date_input("Data de Vencimento", datetime.today().date())
+            
         with col_tipo:
             tipo = st.selectbox("Tipo", ["Despesa (Saída)", "Receita (Entrada)"])
         with col_grupo:
@@ -213,7 +212,6 @@ with aba6:
         
         with col_g1:
             st.markdown("**Distribuição Percentual de Gastos**")
-            # Correção da paleta de cores aplicada abaixo
             fig1 = px.pie(df_pizza, values='Valor', names='Categoria', hole=0.5, color_discrete_sequence=px.colors.qualitative.Pastel)
             fig1.update_layout(height=300, paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white"))
             st.plotly_chart(fig1, use_container_width=True)

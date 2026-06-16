@@ -213,7 +213,7 @@ with aba6:
         
         with col_g1:
             st.markdown("**Distribuição Percentual de Gastos**")
-            fig1 = px.pie(df_pizza, values='Valor', names='Categoria', hole=0.5, color_discrete_sequence=px.colors.qualitative.Pastel)
+            fig1 = px.pie(df_pizza, values='Valor', names='Categoria', hole=0.5, color_discrete_sequence=px.colors.Pastel)
             fig1.update_layout(height=300, paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white"))
             st.plotly_chart(fig1, use_container_width=True)
             
@@ -224,8 +224,3 @@ with aba6:
             st.plotly_chart(fig2, use_container_width=True)
     else:
         st.caption("Cadastre despesas para visualizar os gráficos.")
-
-# --- HISTÓRICO GLOBAL & LIMPEZA ---
-st.write("---")
-if not df_atual.empty:
-    if st.button("⚠️ Limpar Todos os Registros do Sistema"):

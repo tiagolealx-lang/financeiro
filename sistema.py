@@ -32,7 +32,7 @@ def salvar_dados(df):
 if 'dados' not in st.session_state:
     st.session_state.dados = carregar_dados()
 
-# --- ESTILIZAÇÃO CUSTOMIZADA DOS CARDS SUPERIORES ---
+# --- ESTILIZAÇÃO CUSTOMIZADA DOS CARDS SUPERIORES E GRADE DO DESAFIO ---
 st.markdown("""
     <style>
     .barra-metricas {
@@ -58,6 +58,34 @@ st.markdown("""
     
     .v-num { font-size: 22px; font-weight: 800; margin-top: 5px; }
     .t-lbl { font-size: 13px; text-transform: uppercase; opacity: 0.9; }
+    
+    /* Estilos para a Tabela de Desafios */
+    .caixa-desafio-pago {
+        background-color: #2E7D32 !important;
+        color: white !important;
+        font-weight: bold;
+        text-align: center;
+        padding: 10px;
+        border: 1px solid #1B5E20;
+        border-radius: 4px;
+    }
+    .caixa-desafio-pendente {
+        background-color: #212121;
+        color: #BDBDBD;
+        text-align: center;
+        padding: 10px;
+        border: 1px solid #424242;
+        border-radius: 4px;
+    }
+    .card-total-desafio {
+        background-color: #1A237E;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        color: white;
+        font-weight: bold;
+        margin-top: 20px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -74,7 +102,7 @@ col_sel_mes, col_sel_ano = st.columns(2)
 
 with col_sel_mes:
     mes_selecionado_nome = st.selectbox("Escolha o Mês para analisar:", list(meses_pt.values()), index=datetime.today().month - 1)
-    mes_selecionado_num = [k for k, v in meses_pt.items() if v == mes_selecionado_nome][0]
+    mes_selecionado_num = [k for k, v in meses_pt.items() if v == mes_selecionado_nome]
 
 with col_sel_ano:
     ano_selecionado = st.selectbox("Escolha o Ano para analisar:", [str(a) for a in range(2026, 2051)], index=0)
@@ -166,11 +194,12 @@ with aba1:
             else:
                 categoria = st.selectbox("Categoria", ["Salário", "Investimentos", "Freelance", "Outros"])
         with col_val:
-            valor = st.number_input("Valor (R$)", min_value=0.01, step=0.01, format="%.2f")
+            # Ajustado passo para 1 para facilitar inserção de valores inteiros do desafio
+            valor = st.number_input("Valor (R$)", min_value=1.00, step=1.00, format="%.2f")
         with col_status:
             status_pago = st.selectbox("Situação Inicial", ["A PAGAR", "PAGO"])
             
-        descricao = st.text_input("Descrição / Detalhes (Ex: Depósito Semana 1)")
+        descricao = st.text_input("Descrição / Detalhes (Ex: Depósito Caixa Nubank)")
         botao_adicionar = st.form_submit_button("Salvar Registro")
 
     if botao_adicionar:
@@ -216,19 +245,3 @@ with aba4:
         st.info(f"Nenhum Gasto do Mês cadastrado em {mes_selecionado_nome}/{ano_selecionado}.")
 
 # --- ABA 5: RECEBIMENTOS ---
-with aba5:
-    st.subheader(f"💰 Entradas e Recebimentos — {mes_selecionado_nome}")
-    df_rec_aba = df_atual[(df_atual["Tipo"] == "Receita (Entrada)") | (df_atual["Grupo"] == "Salário")] if not df_atual.empty else pd.DataFrame()
-    if not df_rec_aba.empty:
-        st.dataframe(df_rec_aba[["Data", "Categoria", "Descrição", "Valor", "Status"]], use_container_width=True)
-    else:
-        st.info(f"Nenhum Recebimento cadastrado em {mes_selecionado_nome}/{ano_selecionado}.")
-
-# --- ABA 6: GASTOS POR CATEGORIA (REFEITA SEM ERROS) ---
-with aba6:
-    st.subheader(f"📊 Análise de {mes_selecionado_nome} por Categoria")
-    
-    # Busca saídas válidas de forma direta
-    df_gastos_grafico = pd.DataFrame()
-    if not df_atual.empty:
-        df_gastos_grafico = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Grupo"] != "Desafios")]

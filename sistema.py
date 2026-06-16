@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-from datetime import datetime
+from datetime import datetime, date
 
 # Importação segura dos gráficos do Plotly
 try:
@@ -45,7 +45,16 @@ st.subheader("➕ Novo Lançamento")
 with st.form("formulario_lancamento", clear_on_submit=True):
     col_data, col_tipo = st.columns(2)
     with col_data:
-        data = st.date_input("Data", datetime.today().date())
+        # LIMITAÇÃO DO CALENDÁRIO: Começa em 01/01/2026 e vai até 31/12/2050
+        data_minima = date(2026, 1, 1)
+        data_maxima = date(2050, 12, 31)
+        
+        data = st.date_input(
+            "Data", 
+            value=datetime.today().date(),
+            min_value=data_minima,
+            max_value=data_maxima
+        )
     with col_tipo:
         tipo = st.selectbox("Tipo", ["Despesa (Saída)", "Receita (Entrada)"])
         
@@ -103,11 +112,11 @@ if df_atual.empty:
     saldo_final = 63494.00
     
     meses_eixo = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-    valores_eixo = [0, 2000, 0, 0, 5000, 18632, 0, 533, 0, 5200, 0, 0]
+    valores_eixo = [0, 2000, 0, 0, 5600, 18452, 0, 533, 0, 5700, 0, 0]
     
     df_receitas = pd.DataFrame({"Categoria": ["Receitas Operacionais 1", "Receitas Operacionais 2", "Receitas Não Operacionais"], "Valor": [44, 28, 28]})
-    df_despesas = pd.DataFrame({"Categoria": ["Despesas Op 3", "Despesas Op 4", "Impostos", "Despesas Op 1", "Despesas Op 2"], "Valor": [55, 15, 10, 10, 10]})
-    df_contas = pd.DataFrame({"Categoria": ["Despesas_op_1.1", "Despesas_op_1.2", "Despesas_op_1.4"], "Valor": [65, 20, 15]})
+    df_despesas = pd.DataFrame({"Categoria": ["Despesas Op 3", "Despesas Op 4", "Impostos", "Despesas Op 1", "Despesas Op 2"], "Valor": [55, 16, 16, 10, 3]})
+    df_contas = pd.DataFrame({"Categoria": ["Despesas_op_1.1", "Despesas_op_1.2", "Despesas_op_1.4"], "Valor": [74, 21, 5]})
 else:
     # Se já tiver dados cadastrados, calcula o real
     total_receitas = df_atual[df_atual["Tipo"] == "Receita (Entrada)"]["Valor"].sum()
@@ -135,9 +144,9 @@ else:
     df_despesas = df_atual[df_atual["Tipo"] == "Despesa (Saída)"].groupby("Categoria")["Valor"].sum().reset_index()
     df_contas = df_atual.groupby("Categoria")["Valor"].sum().reset_index()
 
-# --- RENDERIZAÇÃO DO LAYOUT (IGUAL À FOTO) ---
+# --- RENDERIZAÇÃO DO LAYOUT ---
 if plotly_disponivel:
-    col_card, col_barra = st.columns([1, 2])
+    col_card, col_barra = st.columns(2)
     
     with col_card:
         st.markdown(f"""
@@ -167,7 +176,6 @@ if plotly_disponivel:
 
     st.write("---")
     
-    # Linha dos 3 gráficos de rosca inferiores
     col_g1, col_g2, col_g3 = st.columns(3)
     
     with col_g1:
@@ -210,7 +218,3 @@ if not df_atual.empty:
         st.session_state.dados = pd.DataFrame(columns=["Data", "Tipo", "Categoria", "Descrição", "Valor"])
         if os.path.exists(ARQUIVO_DADOS):
             os.remove(ARQUIVO_DADOS)
-        st.success("Histórico apagado!")
-        st.rerun()
-else:
-    st.info("Nenhum lançamento cadastrado ainda.")

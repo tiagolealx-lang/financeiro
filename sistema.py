@@ -173,7 +173,7 @@ with aba3:
 # --- ABA 4: GASTOS DO MÊS ---
 with aba4:
     st.subheader("🗓️ Gastos Variáveis / Do Mês")
-    df_mes = df_atual[df_atual["Grupo"] == "Gastos Do Mês"] if not df_atual.empty else pd.DataFrame()
+    df_mes = df_atual[df_atual["Grupo"] == "Gastos do Mês"] if not df_atual.empty else pd.DataFrame()
     if not df_mes.empty:
         st.dataframe(df_mes[["Data", "Categoria", "Descrição", "Valor", "Status"]], use_container_width=True)
     else:
@@ -192,7 +192,6 @@ with aba5:
 with aba6:
     st.subheader("📊 Análise Detalhada por Categoria")
     
-    # Se o arquivo estiver inteiramente limpo, gera a demonstração visual completa baseada na imagem enviada
     if df_atual.empty:
         st.info("💡 Dados demonstrativos ativados para fins de análise visual.")
         df_pizza = pd.DataFrame({"Categoria": ["Casa", "Dinheiro", "Alimentação", "Transporte"], "Valor": [996.00, 1100.00, 387.64, 0.0]})
@@ -226,7 +225,7 @@ with aba6:
     else:
         st.caption("Cadastre despesas para visualizar os gráficos.")
 
-# --- HISTÓRICO GLOBAL & LIMPEZA ---
+# --- HISTÓRICO GLOBAL & LIMPEZA (CORRIGIDO) ---
 st.write("---")
 if not df_atual.empty:
     if st.button("⚠️ Limpar Todos os Registros do Sistema"):

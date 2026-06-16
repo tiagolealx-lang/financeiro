@@ -65,16 +65,18 @@ st.markdown("""
 st.markdown("<h1 style='text-align: center; letter-spacing: 2px; font-family: serif;'>✨ JUNHO</h1>", unsafe_allow_html=True)
 st.write("---")
 
-# --- PROCESSAMENTO DOS VALORES PARA OS CARDS REAIS ---
+# --- PROCESSAMENTO DOS VALORES PARA OS CARDS ---
 df_atual = st.session_state.dados
 
 if df_atual.empty:
-    v_gastos = 2483.64
-    v_recebidos = 3500.00
-    v_pago = 615.47
-    v_falta = 1868.17
-    v_saldo = 2884.53
+    # SISTEMA ZERADO: Valores padrão começam em zero
+    v_gastos = 0.00
+    v_recebidos = 0.00
+    v_pago = 0.00
+    v_falta = 0.00
+    v_saldo = 0.00
 else:
+    # Cálculos Reais Baseados nos seus Lançamentos
     v_recebidos = df_atual[df_atual["Tipo"] == "Receita (Entrada)"]["Valor"].sum()
     v_gastos = df_atual[df_atual["Tipo"] == "Despesa (Saída)"]["Valor"].sum()
     
@@ -87,7 +89,7 @@ else:
         
     v_saldo = v_recebidos - v_pago
 
-# Renderização do Bloco de Métricas Coloridas Superior
+# Renderização do Bloco de Métricas Coloridas Superior com os valores reais
 st.markdown(f"""
     <div class="barra-metricas">
         <div class="card-f c-gastos"><div class="t-lbl">Total de Gastos</div><div class="v-num">R$ {v_gastos:,.2f}</div></div>
@@ -114,9 +116,7 @@ with aba1:
     with st.form("formulario_lancamento", clear_on_submit=True):
         col_data, col_tipo, col_grupo = st.columns(3)
         with col_data:
-            # CALENDÁRIO TOTALMENTE DESTRAVADO E LIVRE AQUI:
             data = st.date_input("Data de Vencimento", datetime.today().date())
-            
         with col_tipo:
             tipo = st.selectbox("Tipo", ["Despesa (Saída)", "Receita (Entrada)"])
         with col_grupo:
@@ -192,9 +192,9 @@ with aba6:
     st.subheader("📊 Análise Detalhada por Categoria")
     
     if df_atual.empty:
-        st.info("💡 Dados demonstrativos ativados para fins de análise visual.")
-        df_pizza = pd.DataFrame({"Categoria": ["Casa", "Dinheiro", "Alimentação", "Transporte"], "Valor": [996.00, 1100.00, 387.64, 0.0]})
-        df_mensal_barra = pd.DataFrame({"Mês": ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'], "Valor": [0,0,0,0,0,2483.64,0,0,0,0,0,0]})
+        # Se estiver zerado, exibe gráficos limpos ao invés de dados falsos
+        df_pizza = pd.DataFrame()
+        df_mensal_barra = pd.DataFrame()
     else:
         df_despesas_reais = df_atual[df_atual["Tipo"] == "Despesa (Saída)"]
         if not df_despesas_reais.empty:
@@ -222,4 +222,4 @@ with aba6:
             fig2.update_layout(height=300, yaxis=dict(visible=False), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color="white"))
             st.plotly_chart(fig2, use_container_width=True)
     else:
-        st.caption("Cadastre despesas para visualizar os gráficos.")
+        st.info("Insira transações reais para ativar a exibição dos gráficos de categorias.")

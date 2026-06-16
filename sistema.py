@@ -74,7 +74,6 @@ col_sel_mes, col_sel_ano = st.columns(2)
 
 with col_sel_mes:
     mes_selecionado_nome = st.selectbox("Escolha o Mês para analisar:", list(meses_pt.values()), index=datetime.today().month - 1)
-    # Encontra o número do mês com base no nome selecionado
     mes_selecionado_num = [k for k, v in meses_pt.items() if v == mes_selecionado_nome][0]
 
 with col_sel_ano:
@@ -108,12 +107,13 @@ if df_atual.empty:
     v_falta = 0.00
     v_saldo = 0.00
 else:
+    # Despesas normais (não inclui depósitos de desafios como gasto)
     v_recebidos = df_atual[df_atual["Tipo"] == "Receita (Entrada)"]["Valor"].sum()
-    v_gastos = df_atual[df_atual["Tipo"] == "Despesa (Saída)"]["Valor"].sum()
+    v_gastos = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Grupo"] != "Desafios")]["Valor"].sum()
     
     if "Status" in df_atual.columns:
-        v_pago = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Status"] == "PAGO")]["Valor"].sum()
-        v_falta = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Status"] == "A PAGAR")]["Valor"].sum()
+        v_pago = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Status"] == "PAGO") & (df_atual["Grupo"] != "Desafios")]["Valor"].sum()
+        v_falta = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Status"] == "A PAGAR") & (df_atual["Grupo"] != "Desafios")]["Valor"].sum()
     else:
         v_pago = 0.00
         v_falta = v_gastos
@@ -132,13 +132,14 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # --- CRIAÇÃO DAS ABAS HORIZONTAIS ---
-aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs([
+aba1, aba2, aba3, aba4, aba5, aba6, aba7 = st.tabs([
     "📥 NOVO LANÇAMENTO",
     "📌 GASTOS FIXOS", 
     "💳 PARCELAMENTOS", 
     "🗓️ GASTOS DO MÊS", 
     "💰 RECEBIMENTOS", 
-    "📊 GASTOS POR CATEGORIA"
+    "📊 GASTOS POR CATEGORIA",
+    "🎯 DESAFIOS DE DEPÓSITOS"  # Nova aba adicionada
 ])
 
 # --- ABA 1: FORMULÁRIO DE ENTRADA DE DADOS ---
@@ -153,16 +154,17 @@ with aba1:
             if data_padrao < data_minima:
                 data_padrao = data_minima
                 
-            data = st.date_input("Data de Vencimento", value=data_padrao, min_value=data_minima, max_value=data_maxima)
+            data = st.date_input("Data de Vencimento / Depósito", value=data_padrao, min_value=data_minima, max_value=data_maxima)
         with col_tipo:
             tipo = st.selectbox("Tipo", ["Despesa (Saída)", "Receita (Entrada)"])
         with col_grupo:
-            grupo = st.selectbox("Classificação/Grupo", ["Gastos Fixos", "Parcelamentos", "Gastos do Mês", "Recebimentos", "Salário"])
+            # ADICIONADO "Desafios" NO CAMPO DE SELEÇÃO DE GRUPO
+            grupo = st.selectbox("Classificação/Grupo", ["Gastos Fixos", "Parcelamentos", "Gastos do Mês", "Recebimentos", "Salário", "Desafios"])
             
         col_cat, col_val, col_status = st.columns(3)
         with col_cat:
             if tipo == "Despesa (Saída)":
-                categoria = st.selectbox("Categoria", ["Alimentação", "Moradia", "Transporte", "Lazer", "Saúde", "Casa", "Dinheiro", "Outros"])
+                categoria = st.selectbox("Categoria", ["Alimentação", "Moradia", "Transporte", "Lazer", "Saúde", "Casa", "Dinheiro", "Poupança/Desafio", "Outros"])
             else:
                 categoria = st.selectbox("Categoria", ["Salário", "Investimentos", "Freelance", "Outros"])
         with col_val:
@@ -170,7 +172,7 @@ with aba1:
         with col_status:
             status_pago = st.selectbox("Situação Inicial", ["A PAGAR", "PAGO"])
             
-        descricao = st.text_input("Descrição / Detalhes (Ex: Empréstimo Nubank)")
+        descricao = st.text_input("Descrição / Detalhes (Ex: Depósito Semana 1 ou Desafio 52 Semanas)")
         botao_adicionar = st.form_submit_button("Salvar Registro")
 
     if botao_adicionar:
@@ -229,9 +231,3 @@ with aba6:
     st.subheader(f"📊 Análise de {mes_selecionado_nome} por Categoria")
     
     if df_atual.empty:
-        st.info("Cadastre transações reais neste mês selecionado para ativar os gráficos automáticos.")
-    else:
-        df_despesas_reais = df_atual[df_atual["Tipo"] == "Despesa (Saída)"]
-        if not df_despesas_reais.empty:
-            df_pizza = df_despesas_reais.groupby("Categoria")["Valor"].sum().reset_index()
-            

@@ -225,7 +225,7 @@ with aba6:
     else:
         st.caption("Cadastre despesas para visualizar os gráficos.")
 
-# --- HISTÓRICO GLOBAL & LIMPEZA (CORRIGIDO) ---
+# --- HISTÓRICO GLOBAL & LIMPEZA ---
 st.write("---")
 if not df_atual.empty:
     if st.button("⚠️ Limpar Todos os Registros do Sistema"):

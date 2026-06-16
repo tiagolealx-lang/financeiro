@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-from datetime import datetime
+from datetime import datetime, date
 
 # Importação segura dos gráficos do Plotly
 try:
@@ -61,13 +61,48 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Título Principal estilizado centralizado
-st.markdown("<h1 style='text-align: center; letter-spacing: 2px; font-family: serif;'>✨ JUNHO</h1>", unsafe_allow_html=True)
+# --- DICIONÁRIO DE TRADUÇÃO DE MESES ---
+meses_pt = {
+    1: "JANEIRO", 2: "FEVEREIRO", 3: "MARÇO", 4: "ABRIL", 
+    5: "MAIO", 6: "JUNHO", 7: "JULHO", 8: "AGOSTO", 
+    9: "SETEMBRO", 10: "OUTUBRO", 11: "NOVEMBRO", 12: "DEZEMBRO"
+}
+
+# --- BARRA DE SELEÇÃO DO MÊS DE VISUALIZAÇÃO (NOVO) ---
+st.markdown("<h2 style='text-align: center; font-family: serif; margin-bottom: 0;'>🔍 Filtrar Período de Visualização</h2>", unsafe_allow_html=True)
+col_sel_mes, col_sel_ano = st.columns(2)
+
+with col_sel_mes:
+    mes_selecionado_nome = st.selectbox("Escolha o Mês para analisar:", list(meses_pt.values()), index=datetime.today().month - 1)
+    # Encontra o número do mês com base no nome selecionado
+    mes_selecionado_num = [k for k, v in meses_pt.items() if v == mes_selecionado_nome][0]
+
+with col_sel_ano:
+    ano_selecionado = st.selectbox("Escolha o Ano para analisar:", [str(a) for a in range(2026, 2051)], index=0)
+
+# Título Grande do Mês Dinâmico na Tela
+st.markdown(f"<h1 style='text-align: center; letter-spacing: 2px; font-family: serif; color: #F5B041; margin-top: 15px;'>✨ {mes_selecionado_nome} / {ano_selecionado}</h1>", unsafe_allow_html=True)
 st.write("---")
 
-# --- PROCESSAMENTO DOS VALORES PARA OS CARDS ---
-df_atual = st.session_state.dados
+# --- FILTRAGEM REAL DO BANCO DE DADOS (NOVO) ---
+df_original = st.session_state.dados
 
+if not df_original.empty:
+    # Cria colunas temporárias de mês e ano para fazer o filtro preciso
+    df_original_copy = df_original.copy()
+    df_original_copy["Data_Dt"] = pd.to_datetime(df_original_copy["Data"])
+    df_original_copy["Mês_Num"] = df_original_copy["Data_Dt"].dt.month
+    df_original_copy["Ano_Num"] = df_original_copy["Data_Dt"].dt.year
+    
+    # Aplica o filtro baseado no que você clicou no topo da página
+    df_atual = df_original_copy[
+        (df_original_copy["Mês_Num"] == mes_selecionado_num) & 
+        (df_original_copy["Ano_Num"] == int(ano_selecionado))
+    ]
+else:
+    df_atual = pd.DataFrame()
+
+# --- PROCESSAMENTO DOS VALORES PARA OS CARDS COM BASE NO FILTRO ---
 if df_atual.empty:
     v_gastos = 0.00
     v_recebidos = 0.00
@@ -75,7 +110,6 @@ if df_atual.empty:
     v_falta = 0.00
     v_saldo = 0.00
 else:
-    # Cálculos Reais Baseados nos seus Lançamentos
     v_recebidos = df_atual[df_atual["Tipo"] == "Receita (Entrada)"]["Valor"].sum()
     v_gastos = df_atual[df_atual["Tipo"] == "Despesa (Saída)"]["Valor"].sum()
     
@@ -83,7 +117,7 @@ else:
         v_pago = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Status"] == "PAGO")]["Valor"].sum()
         v_falta = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Status"] == "A PAGAR")]["Valor"].sum()
     else:
-        v_pago = 0.0
+        v_pago = 0.00
         v_falta = v_gastos
         
     v_saldo = v_recebidos - v_pago
@@ -109,17 +143,22 @@ aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs([
     "📊 GASTOS POR CATEGORIA"
 ])
 
-# --- ABA 1: FORMULÁRIO DE ENTRADA DE DADOS ---
+# --- ABA 1: FORMULÁRIO DE ENTRADA DE DADOS (CRIA EM QUALQUER PERÍODO) ---
 with aba1:
     st.subheader("➕ Adicionar Nova Movimentação")
     with st.form("formulario_lancamento", clear_on_submit=True):
         col_data, col_tipo, col_grupo = st.columns(3)
         with col_data:
-            data = st.date_input("Data de Vencimento", datetime.today().date())
+            data_minima = date(2026, 1, 1)
+            data_maxima = date(2050, 12, 31)
+            data_padrao = datetime.today().date()
+            if data_padrao < data_minima:
+                data_padrao = data_minima
+                
+            data = st.date_input("Data de Vencimento", value=data_padrao, min_value=data_minima, max_value=data_maxima)
         with col_tipo:
             tipo = st.selectbox("Tipo", ["Despesa (Saída)", "Receita (Entrada)"])
         with col_grupo:
-            # ADICIONADO "Salário" NA LISTA DE SELEÇÃO DE GRUPO ABAIXO
             grupo = st.selectbox("Classificação/Grupo", ["Gastos Fixos", "Parcelamentos", "Gastos do Mês", "Recebimentos", "Salário"])
             
         col_cat, col_val, col_status = st.columns(3)
@@ -137,6 +176,7 @@ with aba1:
         botao_adicionar = st.form_submit_button("Salvar Registro")
 
     if botao_adicionar:
+        # Cria a nova linha na tabela original geral
         novo_item = pd.DataFrame([{
             "Data": data,
             "Tipo": tipo,
@@ -153,73 +193,42 @@ with aba1:
 
 # --- ABA 2: GASTOS FIXOS ---
 with aba2:
-    st.subheader("📌 Relatório de Gastos Fixos")
+    st.subheader(f"📌 Relatório de Gastos Fixos — {mes_selecionado_nome}")
     df_fixos = df_atual[df_atual["Grupo"] == "Gastos Fixos"] if not df_atual.empty else pd.DataFrame()
     if not df_fixos.empty:
         st.dataframe(df_fixos[["Data", "Categoria", "Descrição", "Valor", "Status"]], use_container_width=True)
     else:
-        st.info("Nenhum Gasto Fixo cadastrado.")
+        st.info(f"Nenhum Gasto Fixo cadastrado em {mes_selecionado_nome}/{ano_selecionado}.")
 
 # --- ABA 3: PARCELAMENTOS ---
 with aba3:
-    st.subheader("💳 Relatório de Parcelamentos")
+    st.subheader(f"💳 Relatório de Parcelamentos — {mes_selecionado_nome}")
     df_parc = df_atual[df_atual["Grupo"] == "Parcelamentos"] if not df_atual.empty else pd.DataFrame()
     if not df_parc.empty:
         st.dataframe(df_parc[["Data", "Categoria", "Descrição", "Valor", "Status"]], use_container_width=True)
     else:
-        st.info("Nenhum Parcelamento cadastrado.")
+        st.info(f"Nenhum Parcelamento cadastrado em {mes_selecionado_nome}/{ano_selecionado}.")
 
 # --- ABA 4: GASTOS DO MÊS ---
 with aba4:
-    st.subheader("🗓️ Gastos Variáveis / Do Mês")
+    st.subheader(f"🗓️ Gastos Variáveis / Do Mês — {mes_selecionado_nome}")
     df_mes = df_atual[df_atual["Grupo"] == "Gastos do Mês"] if not df_atual.empty else pd.DataFrame()
     if not df_mes.empty:
         st.dataframe(df_mes[["Data", "Categoria", "Descrição", "Valor", "Status"]], use_container_width=True)
     else:
-        st.info("Nenhum Gasto do Mês cadastrado.")
+        st.info(f"Nenhum Gasto do Mês cadastrado em {mes_selecionado_nome}/{ano_selecionado}.")
 
 # --- ABA 5: RECEBIMENTOS ---
 with aba5:
-    st.subheader("💰 Entradas e Recebimentos")
-    # AJUSTADO: Mostra tanto quem foi classificado como "Recebimentos" quanto como "Salário"
+    st.subheader(f"💰 Entradas e Recebimentos — {mes_selecionado_nome}")
     df_rec_aba = df_atual[(df_atual["Tipo"] == "Receita (Entrada)") | (df_atual["Grupo"] == "Salário")] if not df_atual.empty else pd.DataFrame()
     if not df_rec_aba.empty:
         st.dataframe(df_rec_aba[["Data", "Categoria", "Descrição", "Valor", "Status"]], use_container_width=True)
     else:
-        st.info("Nenhum Recebimento cadastrado.")
+        st.info(f"Nenhum Recebimento cadastrado em {mes_selecionado_nome}/{ano_selecionado}.")
 
-# --- ABA 6: GASTOS POR CATEGORIA (GRÁFICOS) ---
+# --- ABA 6: GASTOS POR CATEGORIA (GRÁFICOS MENSALIZADOS) ---
 with aba6:
-    st.subheader("📊 Análise Detalhada por Categoria")
+    st.subheader(f"📊 Análise de {mes_selecionado_nome} por Categoria")
     
     if df_atual.empty:
-        df_pizza = pd.DataFrame()
-        df_mensal_barra = pd.DataFrame()
-    else:
-        df_despesas_reais = df_atual[df_atual["Tipo"] == "Despesa (Saída)"]
-        if not df_despesas_reais.empty:
-            df_pizza = df_despesas_reais.groupby("Categoria")["Valor"].sum().reset_index()
-        else:
-            df_pizza = pd.DataFrame()
-            
-        df_visual_barra = df_atual.copy()
-        df_visual_barra["Data"] = pd.to_datetime(df_visual_barra["Data"])
-        df_visual_barra["Mês"] = df_visual_barra["Data"].dt.strftime("%b")
-        df_mensal_barra = df_visual_barra[df_visual_barra["Tipo"] == "Despesa (Saída)"].groupby(["Mês"])["Valor"].sum().reset_index()
-
-    if plotly_disponivel and not df_pizza.empty:
-        col_g1, col_g2 = st.columns(2)
-        
-        with col_g1:
-            st.markdown("**Distribuição Percentual de Gastos**")
-            fig1 = px.pie(df_pizza, values='Valor', names='Categoria', hole=0.5, color_discrete_sequence=px.colors.qualitative.Pastel)
-            fig1.update_layout(height=300, paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white"))
-            st.plotly_chart(fig1, use_container_width=True)
-            
-        with col_g2:
-            st.markdown("**Histórico de Saídas Mensais**")
-            fig2 = go.Figure(data=[go.Bar(x=df_mensal_barra["Mês"], y=df_mensal_barra["Valor"], marker_color='#F5B041')])
-            fig2.update_layout(height=300, yaxis=dict(visible=False), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color="white"))
-            st.plotly_chart(fig2, use_container_width=True)
-    else:
-        st.info("Insira transações reais para ativar a exibição dos gráficos de categorias.")

@@ -107,7 +107,6 @@ if df_atual.empty:
     v_falta = 0.00
     v_saldo = 0.00
 else:
-    # Despesas normais (não inclui depósitos de desafios como gasto)
     v_recebidos = df_atual[df_atual["Tipo"] == "Receita (Entrada)"]["Valor"].sum()
     v_gastos = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Grupo"] != "Desafios")]["Valor"].sum()
     
@@ -139,7 +138,7 @@ aba1, aba2, aba3, aba4, aba5, aba6, aba7 = st.tabs([
     "🗓️ GASTOS DO MÊS", 
     "💰 RECEBIMENTOS", 
     "📊 GASTOS POR CATEGORIA",
-    "🎯 DESAFIOS DE DEPÓSITOS"  # Nova aba adicionada
+    "🎯 DESAFIOS DE DEPÓSITOS"
 ])
 
 # --- ABA 1: FORMULÁRIO DE ENTRADA DE DADOS ---
@@ -158,7 +157,6 @@ with aba1:
         with col_tipo:
             tipo = st.selectbox("Tipo", ["Despesa (Saída)", "Receita (Entrada)"])
         with col_grupo:
-            # ADICIONADO "Desafios" NO CAMPO DE SELEÇÃO DE GRUPO
             grupo = st.selectbox("Classificação/Grupo", ["Gastos Fixos", "Parcelamentos", "Gastos do Mês", "Recebimentos", "Salário", "Desafios"])
             
         col_cat, col_val, col_status = st.columns(3)
@@ -172,7 +170,7 @@ with aba1:
         with col_status:
             status_pago = st.selectbox("Situação Inicial", ["A PAGAR", "PAGO"])
             
-        descricao = st.text_input("Descrição / Detalhes (Ex: Depósito Semana 1 ou Desafio 52 Semanas)")
+        descricao = st.text_input("Descrição / Detalhes (Ex: Depósito Semana 1)")
         botao_adicionar = st.form_submit_button("Salvar Registro")
 
     if botao_adicionar:
@@ -226,8 +224,12 @@ with aba5:
     else:
         st.info(f"Nenhum Recebimento cadastrado em {mes_selecionado_nome}/{ano_selecionado}.")
 
-# --- ABA 6: GASTOS POR CATEGORIA ---
+# --- ABA 6: GASTOS POR CATEGORIA (GRÁFICOS PROTEGIDOS) ---
 with aba6:
     st.subheader(f"📊 Análise de {mes_selecionado_nome} por Categoria")
     
-    if df_atual.empty:
+    df_despesas_reais = pd.DataFrame()
+    if not df_atual.empty:
+        df_despesas_reais = df_atual[(df_atual["Tipo"] == "Despesa (Saída)") & (df_atual["Grupo"] != "Desafios")]
+
+    if not df_despesas_reais.empty:

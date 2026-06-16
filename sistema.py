@@ -96,13 +96,12 @@ meses_pt = {
     9: "SETEMBRO", 10: "OUTUBRO", 11: "NOVEMBRO", 12: "DEZEMBRO"
 }
 
-# --- BARRA DE SELEÇÃO DO MÊS DE VISUALIZAÇÃO COM CORREÇÃO ---
+# --- BARRA DE SELEÇÃO DO MÊS DE VISUALIZAÇÃO ---
 st.markdown("<h2 style='text-align: center; font-family: serif; margin-bottom: 0;'>🔍 Filtrar Período de Visualização</h2>", unsafe_allow_html=True)
 col_sel_mes, col_sel_ano = st.columns(2)
 
 with col_sel_mes:
     mes_selecionado_nome = st.selectbox("Escolha o Mês para analisar:", list(meses_pt.values()), index=datetime.today().month - 1)
-    # CORREÇÃO CRÍTICA AQUI: .index() garante que pegamos o número puro, e não uma lista
     mes_selecionado_num = list(meses_pt.keys())[list(meses_pt.values()).index(mes_selecionado_nome)]
 
 with col_sel_ano:
@@ -124,7 +123,6 @@ if not df_original.empty:
     df_original_copy["Mês_Num"] = df_original_copy["Data_Dt"].dt.month
     df_original_copy["Ano_Num"] = df_original_copy["Data_Dt"].dt.year
     
-    # Filtro agora compara número com número perfeitamente
     df_atual = df_original_copy[
         (df_original_copy["Mês_Num"] == mes_selecionado_num) & 
         (df_original_copy["Ano_Num"] == int(ano_selecionado))
@@ -242,3 +240,7 @@ with aba3:
 # --- ABA 4: GASTOS DO MÊS ---
 with aba4:
     st.subheader(f"🗓️ Gastos Variáveis / Do Mês — {mes_selecionado_nome}")
+    df_mes = df_atual[df_atual["Grupo"] == "Gastos do Mês"] if not df_atual.empty else pd.DataFrame()
+    if not df_mes.empty:
+        st.dataframe(df_mes[["Data", "Categoria", "Descrição", "Valor", "Status"]], use_container_width=True)
+    else:

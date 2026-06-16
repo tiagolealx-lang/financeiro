@@ -68,7 +68,7 @@ meses_pt = {
     9: "SETEMBRO", 10: "OUTUBRO", 11: "NOVEMBRO", 12: "DEZEMBRO"
 }
 
-# --- BARRA DE SELEÇÃO DO MÊS DE VISUALIZAÇÃO (NOVO) ---
+# --- BARRA DE SELEÇÃO DO MÊS DE VISUALIZAÇÃO ---
 st.markdown("<h2 style='text-align: center; font-family: serif; margin-bottom: 0;'>🔍 Filtrar Período de Visualização</h2>", unsafe_allow_html=True)
 col_sel_mes, col_sel_ano = st.columns(2)
 
@@ -84,17 +84,15 @@ with col_sel_ano:
 st.markdown(f"<h1 style='text-align: center; letter-spacing: 2px; font-family: serif; color: #F5B041; margin-top: 15px;'>✨ {mes_selecionado_nome} / {ano_selecionado}</h1>", unsafe_allow_html=True)
 st.write("---")
 
-# --- FILTRAGEM REAL DO BANCO DE DADOS (NOVO) ---
+# --- FILTRAGEM REAL DO BANCO DE DADOS ---
 df_original = st.session_state.dados
 
 if not df_original.empty:
-    # Cria colunas temporárias de mês e ano para fazer o filtro preciso
     df_original_copy = df_original.copy()
     df_original_copy["Data_Dt"] = pd.to_datetime(df_original_copy["Data"])
     df_original_copy["Mês_Num"] = df_original_copy["Data_Dt"].dt.month
     df_original_copy["Ano_Num"] = df_original_copy["Data_Dt"].dt.year
     
-    # Aplica o filtro baseado no que você clicou no topo da página
     df_atual = df_original_copy[
         (df_original_copy["Mês_Num"] == mes_selecionado_num) & 
         (df_original_copy["Ano_Num"] == int(ano_selecionado))
@@ -102,7 +100,7 @@ if not df_original.empty:
 else:
     df_atual = pd.DataFrame()
 
-# --- PROCESSAMENTO DOS VALORES PARA OS CARDS COM BASE NO FILTRO ---
+# --- PROCESSAMENTO DOS VALORES PARA OS CARDS ---
 if df_atual.empty:
     v_gastos = 0.00
     v_recebidos = 0.00
@@ -143,7 +141,7 @@ aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs([
     "📊 GASTOS POR CATEGORIA"
 ])
 
-# --- ABA 1: FORMULÁRIO DE ENTRADA DE DADOS (CRIA EM QUALQUER PERÍODO) ---
+# --- ABA 1: FORMULÁRIO DE ENTRADA DE DADOS ---
 with aba1:
     st.subheader("➕ Adicionar Nova Movimentação")
     with st.form("formulario_lancamento", clear_on_submit=True):
@@ -176,7 +174,6 @@ with aba1:
         botao_adicionar = st.form_submit_button("Salvar Registro")
 
     if botao_adicionar:
-        # Cria a nova linha na tabela original geral
         novo_item = pd.DataFrame([{
             "Data": data,
             "Tipo": tipo,
@@ -227,8 +224,14 @@ with aba5:
     else:
         st.info(f"Nenhum Recebimento cadastrado em {mes_selecionado_nome}/{ano_selecionado}.")
 
-# --- ABA 6: GASTOS POR CATEGORIA (GRÁFICOS MENSALIZADOS) ---
+# --- ABA 6: GASTOS POR CATEGORIA ---
 with aba6:
     st.subheader(f"📊 Análise de {mes_selecionado_nome} por Categoria")
     
     if df_atual.empty:
+        st.info("Cadastre transações reais neste mês selecionado para ativar os gráficos automáticos.")
+    else:
+        df_despesas_reais = df_atual[df_atual["Tipo"] == "Despesa (Saída)"]
+        if not df_despesas_reais.empty:
+            df_pizza = df_despesas_reais.groupby("Categoria")["Valor"].sum().reset_index()
+            

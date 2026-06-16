@@ -96,16 +96,20 @@ meses_pt = {
     9: "SETEMBRO", 10: "OUTUBRO", 11: "NOVEMBRO", 12: "DEZEMBRO"
 }
 
-# --- BARRA DE SELEÇÃO DO MÊS DE VISUALIZAÇÃO ---
+# --- BARRA DE SELEÇÃO DO MÊS DE VISUALIZAÇÃO COM CORREÇÃO ---
 st.markdown("<h2 style='text-align: center; font-family: serif; margin-bottom: 0;'>🔍 Filtrar Período de Visualização</h2>", unsafe_allow_html=True)
 col_sel_mes, col_sel_ano = st.columns(2)
 
 with col_sel_mes:
     mes_selecionado_nome = st.selectbox("Escolha o Mês para analisar:", list(meses_pt.values()), index=datetime.today().month - 1)
-    mes_selecionado_num = [k for k, v in meses_pt.items() if v == mes_selecionado_nome]
+    # CORREÇÃO CRÍTICA AQUI: .index() garante que pegamos o número puro, e não uma lista
+    mes_selecionado_num = list(meses_pt.keys())[list(meses_pt.values()).index(mes_selecionado_nome)]
 
 with col_sel_ano:
-    ano_selecionado = st.selectbox("Escolha o Ano para analisar:", [str(a) for a in range(2026, 2051)], index=0)
+    anos_disponiveis = [str(a) for a in range(2026, 2051)]
+    ano_atual_str = str(datetime.today().year)
+    index_ano_atual = anos_disponiveis.index(ano_atual_str) if ano_atual_str in anos_disponiveis else 0
+    ano_selecionado = st.selectbox("Escolha o Ano para analisar:", anos_disponiveis, index=index_ano_atual)
 
 # Título Grande do Mês Dinâmico na Tela
 st.markdown(f"<h1 style='text-align: center; letter-spacing: 2px; font-family: serif; color: #F5B041; margin-top: 15px;'>✨ {mes_selecionado_nome} / {ano_selecionado}</h1>", unsafe_allow_html=True)
@@ -120,6 +124,7 @@ if not df_original.empty:
     df_original_copy["Mês_Num"] = df_original_copy["Data_Dt"].dt.month
     df_original_copy["Ano_Num"] = df_original_copy["Data_Dt"].dt.year
     
+    # Filtro agora compara número com número perfeitamente
     df_atual = df_original_copy[
         (df_original_copy["Mês_Num"] == mes_selecionado_num) & 
         (df_original_copy["Ano_Num"] == int(ano_selecionado))
@@ -194,7 +199,6 @@ with aba1:
             else:
                 categoria = st.selectbox("Categoria", ["Salário", "Investimentos", "Freelance", "Outros"])
         with col_val:
-            # Ajustado passo para 1 para facilitar inserção de valores inteiros do desafio
             valor = st.number_input("Valor (R$)", min_value=1.00, step=1.00, format="%.2f")
         with col_status:
             status_pago = st.selectbox("Situação Inicial", ["A PAGAR", "PAGO"])
@@ -238,10 +242,3 @@ with aba3:
 # --- ABA 4: GASTOS DO MÊS ---
 with aba4:
     st.subheader(f"🗓️ Gastos Variáveis / Do Mês — {mes_selecionado_nome}")
-    df_mes = df_atual[df_atual["Grupo"] == "Gastos do Mês"] if not df_atual.empty else pd.DataFrame()
-    if not df_mes.empty:
-        st.dataframe(df_mes[["Data", "Categoria", "Descrição", "Valor", "Status"]], use_container_width=True)
-    else:
-        st.info(f"Nenhum Gasto do Mês cadastrado em {mes_selecionado_nome}/{ano_selecionado}.")
-
-# --- ABA 5: RECEBIMENTOS ---
